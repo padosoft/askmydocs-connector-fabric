@@ -1,0 +1,13 @@
+{
+    "preset": "laravel",
+    "rules": {
+        "declare_strict_types": true,
+        "concat_space": {
+            "spacing": "none"
+        }
+    },
+    "exclude": [
+        "vendor",
+        "tests/fixtures"
+    ]
+}

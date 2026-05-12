@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.3', '8.4', '8.5']
+        laravel: ['12.*', '13.*']
+        include:
+          - laravel: '12.*'
+            testbench: '^10.0'
+          - laravel: '13.*'
+            testbench: '^11.0'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, openssl, pdo, pdo_sqlite, tokenizer, xml, ctype, json, intl, dom, libxml, xmlreader
+          coverage: none
+          tools: composer:v2
+
+      - name: Validate composer.json
+        run: composer validate --strict --no-check-publish
+
+      - name: Pin Laravel matrix versions
+        run: |
+          composer require --no-update --no-interaction \
+            "illuminate/support:${{ matrix.laravel }}" \
+            "illuminate/http:${{ matrix.laravel }}" \
+            "illuminate/contracts:${{ matrix.laravel }}" \
+            "orchestra/testbench:${{ matrix.testbench }}"
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ matrix.php }}-laravel-${{ matrix.laravel }}-${{ hashFiles('composer.json') }}
+          restore-keys: composer-${{ matrix.php }}-laravel-${{ matrix.laravel }}-
+
+      - name: Install dependencies
+        run: composer update --prefer-dist --no-progress --no-interaction --prefer-stable
+
+      - name: Run PHPUnit (Unit + Feature)
+        run: vendor/bin/phpunit --no-coverage --display-warnings --testsuite=Default
+
+  static-analysis:
+    runs-on: ubuntu-latest
+    name: Static analysis
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-static-${{ hashFiles('composer.json') }}
+          restore-keys: composer-static-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Run Pint (code style check)
+        run: vendor/bin/pint --test
