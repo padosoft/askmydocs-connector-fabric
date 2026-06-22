@@ -5,6 +5,16 @@ This file follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and t
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-06-22
+
+### Changed
+
+- Adopt `padosoft/askmydocs-connector-base` v1.3 `resolveProjectKey()` for project binding. The connector now resolves the ingest project from the installation's explicit `project_key`, falling back to the host's `kb.ingest.default_project` config and finally the literal `default` — replacing the per-connector `connector-fabric` synthetic-project fallback. This enables multi-account / project-scoped adoption with a single source of truth across all connectors.
+
+### Requires
+
+- `padosoft/askmydocs-connector-base` `^1.3`.
+
 ## [1.0.0] - 2026-05-12
 
 ### Added
