@@ -140,8 +140,7 @@ class FabricConnector extends BaseConnector
         $headers = $this->buildHeaders($installationId);
 
         $installation = $this->loadInstallation($installationId);
-        $config = (array) ($installation->config_json ?? []);
-        $projectKey = (string) ($config['project_key'] ?? ('connector-'.$this->key()));
+        $projectKey = $this->resolveProjectKey($installation);
 
         $added = 0;
         $errors = [];
@@ -198,8 +197,7 @@ class FabricConnector extends BaseConnector
         $headers = $this->buildHeaders($installationId);
 
         $installation = $this->loadInstallation($installationId);
-        $config = (array) ($installation->config_json ?? []);
-        $projectKey = (string) ($config['project_key'] ?? ('connector-'.$this->key()));
+        $projectKey = $this->resolveProjectKey($installation);
 
         $updated = 0;
         $errors = [];
