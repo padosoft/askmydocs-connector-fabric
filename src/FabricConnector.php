@@ -10,10 +10,12 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Padosoft\AskMyDocsConnectorBase\BaseConnector;
+use Padosoft\AskMyDocsConnectorBase\Contracts\DeclaresProvenance;
 use Padosoft\AskMyDocsConnectorBase\Exceptions\ConnectorApiException;
 use Padosoft\AskMyDocsConnectorBase\Exceptions\ConnectorAuthException;
 use Padosoft\AskMyDocsConnectorBase\HealthStatus;
 use Padosoft\AskMyDocsConnectorBase\Models\ConnectorInstallation;
+use Padosoft\AskMyDocsConnectorBase\ProvenanceTier;
 use Padosoft\AskMyDocsConnectorBase\Support\Metadata\SourceAwareMetadataBuilder;
 use Padosoft\AskMyDocsConnectorBase\Support\Metadata\VendorMimeSelector;
 use Padosoft\AskMyDocsConnectorBase\SyncResult;
@@ -59,7 +61,7 @@ use Padosoft\AskMyDocsConnectorBase\SyncResult;
  * tenant brings its own credentials — that's the canonical multi-tenant
  * shape; the env-var path is a development convenience.
  */
-class FabricConnector extends BaseConnector
+class FabricConnector extends BaseConnector implements DeclaresProvenance
 {
     public function key(): string
     {
@@ -335,6 +337,24 @@ class FabricConnector extends BaseConnector
             'note' => 'Fabric has no programmatic API-key revoke endpoint; '
                 .'rotate the key at https://developers.fabric.so for full revocation.',
         ]);
+    }
+
+    /**
+     * Content here was written inside the organisation.
+     *
+     * This connector reads a Fabric workspace the organisation administers — a system whose write access the
+     * organisation grants. Whoever authored a document had to be given the
+     * ability to author it, which is exactly the property `TrustedInternal`
+     * records. Contrast the IMAP connector, whose mailbox accepts a message
+     * from anyone who knows the address.
+     *
+     * "Trusted" is a statement about authorship, not about correctness or
+     * curation. An internal page can be wrong, stale or unreviewed; that is
+     * the Auto-Wiki curation tier's question, and it is a different one.
+     */
+    public function provenanceTier(int $installationId): ProvenanceTier
+    {
+        return ProvenanceTier::TrustedInternal;
     }
 
     public function health(int $installationId): HealthStatus
